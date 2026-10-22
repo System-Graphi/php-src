@@ -395,6 +395,14 @@ static int find_boundary(multipart_buffer *self, char *boundary TSRMLS_DC)
 	return 0;
 }
 
+static zend_bool php_mime_should_save_hdr(const char *name)
+{
+	return !strcasecmp(name, "Content-Disposition")
+		|| !strcasecmp(name, "Content-Type");
+}
+
+static char *php_mime_get_hdr_value(zend_llist header, char *key);
+
 /* parse headers */
 static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header TSRMLS_DC)
 {
@@ -436,10 +444,16 @@ static int multipart_buffer_headers(multipart_buffer *self, zend_llist *header T
 			}
 
 			*value = '\0';
-			do { value++; } while(isspace(*value));
 
-			key = estrdup(line);
-			smart_str_appends(&buf_value, value);
+			/* 未使用ヘッダと重複を蓄積せず、従来どおり最初の値を使う。 */
+			if (!php_mime_should_save_hdr(line)
+					|| php_mime_get_hdr_value(*header, line)) {
+				key = NULL;
+			} else {
+				key = estrdup(line);
+				do { value++; } while (isspace((unsigned char)*value));
+				smart_str_appends(&buf_value, value);
+			}
 		} else if (buf_value.c) { /* If no ':' on the line, add to previous line */
 			smart_str_appends(&buf_value, line);
 		} else {
@@ -512,11 +526,11 @@ static char *php_ap_getword(const zend_encoding *encoding, char **line, char sto
 	return res;
 }
 
-static char *substring_conf(char *start, int len, char quote)
+static char *substring_conf(char *start, size_t len, char quote)
 {
 	char *result = emalloc(len + 1);
 	char *resp = result;
-	int i;
+	size_t i;
 
 	for (i = 0; i < len && start[i] != quote; ++i) {
 		if (start[i] == '\\' && (start[i + 1] == '\\' || (quote && start[i + 1] == quote))) {
@@ -551,7 +565,7 @@ static char *php_ap_getword_conf(const zend_encoding *encoding, char *str TSRMLS
 		while (*strend && !isspace(*strend)) {
 			++strend;
 		}
-		return substring_conf(str, strend - str, 0);
+		return substring_conf(str, (size_t)(strend - str), 0);
 	}
 }
 
@@ -690,6 +704,8 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */
 	void *event_extra_data = NULL;
 	unsigned int llen = 0;
 	int upload_cnt = INI_INT("max_file_uploads");
+	long body_parts_cnt = INI_INT("max_multipart_body_parts");
+	long body_parts_limit;
 	const zend_encoding *internal_encoding = zend_multibyte_get_internal_encoding(TSRMLS_C);
 	php_rfc1867_getword_t getword;
 	php_rfc1867_getword_conf_t getword_conf;
@@ -710,6 +726,16 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */
 		sapi_module.sapi_error(E_WARNING, "POST Content-Length of %ld bytes exceeds the limit of %ld bytes", SG(request_info).content_length, SG(post_max_size));
 		return;
 	}
+
+	if (body_parts_cnt < 0) {
+		long input_limit = PG(max_input_vars) > 0 ? PG(max_input_vars) : 0;
+		long upload_limit = upload_cnt > 0 ? upload_cnt : 0;
+
+		/* 設定値の加算自体でオーバーフローしないようにする。 */
+		body_parts_cnt = input_limit > LONG_MAX - upload_limit
+			? LONG_MAX : input_limit + upload_limit;
+	}
+	body_parts_limit = body_parts_cnt;
 
 	/* Get the boundary */
 	boundary = strstr(content_type_dup, "boundary");
@@ -790,6 +816,13 @@ SAPI_API SAPI_POST_HANDLER_FUNC(rfc1867_post_handler) /* {{{ */
 		if (!multipart_buffer_headers(mbuff, &header TSRMLS_CC)) {
 			goto fileupload_done;
 		}
+
+		/* 空のファイル指定や Content-Disposition のないパートも数える。 */
+		if (body_parts_cnt == 0) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Multipart body parts limit exceeded %ld. To increase the limit change max_multipart_body_parts in php.ini.", body_parts_limit);
+			goto fileupload_done;
+		}
+		body_parts_cnt--;
 
 		if ((cd = php_mime_get_hdr_value(header, "Content-Disposition"))) {
 			char *pair = NULL;
