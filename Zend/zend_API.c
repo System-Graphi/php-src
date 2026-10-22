@@ -1282,7 +1282,7 @@ ZEND_API int add_assoc_string_ex(zval *arg, const char *key, uint key_len, char 
 	size_t _len = strlen(str);
 
 	if (UNEXPECTED(_len > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1297,7 +1297,7 @@ ZEND_API int add_assoc_stringl_ex(zval *arg, const char *key, uint key_len, char
 	zval *tmp;
 
 	if (UNEXPECTED(length > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1374,7 +1374,7 @@ ZEND_API int add_index_string(zval *arg, ulong index, const char *str, int dupli
 	size_t _len = strlen(str);
 
 	if (UNEXPECTED(_len > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1389,7 +1389,7 @@ ZEND_API int add_index_stringl(zval *arg, ulong index, const char *str, uint len
 	zval *tmp;
 
 	if (UNEXPECTED(length > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1476,7 +1476,7 @@ ZEND_API int add_next_index_stringl(zval *arg, const char *str, uint length, int
 	zval *tmp;
 
 	if (UNEXPECTED(length > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 	MAKE_STD_ZVAL(tmp);
 	ZVAL_STRINGL(tmp, str, length, duplicate);
@@ -1497,7 +1497,7 @@ ZEND_API int add_get_assoc_string_ex(zval *arg, const char *key, uint key_len, c
 	size_t _len = strlen(str);
 
 	if (UNEXPECTED(_len > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1512,7 +1512,7 @@ ZEND_API int add_get_assoc_stringl_ex(zval *arg, const char *key, uint key_len, 
 	zval *tmp;
 
 	if (UNEXPECTED(length > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1697,7 +1697,7 @@ ZEND_API int add_property_string_ex(zval *arg, const char *key, uint key_len, co
 	size_t _len = strlen(str);
 
 	if (UNEXPECTED(_len > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);
@@ -1719,7 +1719,7 @@ ZEND_API int add_property_stringl_ex(zval *arg, const char *key, uint key_len, c
 	zval *z_key;
 
 	if (UNEXPECTED(length > INT_MAX)) {
-		zend_error_noreturn(E_ERROR, "String overflow, max size is %d", INT_MAX);
+		zend_mm_safe_error_ex("String overflow, max size is %d", INT_MAX);
 	}
 
 	MAKE_STD_ZVAL(tmp);

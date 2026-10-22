@@ -17,7 +17,13 @@ session.upload_progress.name=PHP_SESSION_UPLOAD_PROGRESS
 session.upload_progress.freq=1%
 session.upload_progress.min_freq=0.000000001
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php
+include('skipif.inc');
+/* EOL 向け修正で停止された進捗機能自体を対象とする。 */
+if (!ini_get('session.upload_progress.enabled')) {
+    die('skip session upload progress is disabled');
+}
+?>
 --COOKIE--
 PHPSESSID=rfc1867-tests
 --GET--
