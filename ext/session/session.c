@@ -690,6 +690,22 @@ static PHP_INI_MH(OnUpdateHashFunc) /* {{{ */
 }
 /* }}} */
 
+static PHP_INI_MH(OnUpdateRfc1867Enabled) /* {{{ */
+{
+	/* EOL 向け修正では初期化前のセッション処理を停止し、設定表示も実態に合わせる。 */
+	PS(rfc1867_enabled) = 0;
+	if (!new_value) {
+		return SUCCESS;
+	}
+	OnUpdateBool(entry, new_value, new_value_length, mh_arg1, mh_arg2, mh_arg3, stage TSRMLS_CC);
+	if (PS(rfc1867_enabled)) {
+		PS(rfc1867_enabled) = 0;
+		return FAILURE;
+	}
+	return SUCCESS;
+}
+/* }}} */
+
 static PHP_INI_MH(OnUpdateRfc1867Freq) /* {{{ */
 {
 	int tmp;
@@ -766,7 +782,7 @@ PHP_INI_BEGIN()
 
 	/* Upload progress */
 	STD_PHP_INI_BOOLEAN("session.upload_progress.enabled",
-	                                                "1",     ZEND_INI_PERDIR, OnUpdateBool,        rfc1867_enabled, php_ps_globals, ps_globals)
+	                                                "0",     ZEND_INI_PERDIR, OnUpdateRfc1867Enabled, rfc1867_enabled, php_ps_globals, ps_globals)
 	STD_PHP_INI_BOOLEAN("session.upload_progress.cleanup",
 	                                                "1",     ZEND_INI_PERDIR, OnUpdateBool,        rfc1867_cleanup, php_ps_globals, ps_globals)
 	STD_PHP_INI_ENTRY("session.upload_progress.prefix",
@@ -2472,7 +2488,8 @@ static int php_session_rfc1867_callback(unsigned int event, void *event_data, vo
 	if (php_session_rfc1867_orig_callback) {
 		retval = php_session_rfc1867_orig_callback(event, event_data, extra TSRMLS_CC);
 	}
-	if (!PS(rfc1867_enabled)) {
+	/* CVE-2026-109619: 設定を経由しない変更でも初期化前の処理を再開させない。 */
+	if (!PS(rfc1867_enabled) || 1) {
 		return retval;
 	}
 

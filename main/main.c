@@ -558,6 +558,7 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY("disable_functions",			"",			PHP_INI_SYSTEM,		NULL)
 	PHP_INI_ENTRY("disable_classes",			"",			PHP_INI_SYSTEM,		NULL)
 	PHP_INI_ENTRY("max_file_uploads",			"20",		PHP_INI_SYSTEM|PHP_INI_PERDIR,		NULL)
+	PHP_INI_ENTRY("max_multipart_body_parts", "-1", PHP_INI_SYSTEM|PHP_INI_PERDIR, NULL)
 
 	STD_PHP_INI_BOOLEAN("allow_url_fopen",		"1",		PHP_INI_SYSTEM,		OnUpdateBool,		allow_url_fopen,		php_core_globals,		core_globals)
 	STD_PHP_INI_BOOLEAN("allow_url_include",	"0",		PHP_INI_SYSTEM,		OnUpdateBool,		allow_url_include,		php_core_globals,		core_globals)
@@ -1697,6 +1698,8 @@ void php_request_shutdown_for_hook(void *dummy)
 			}
 		}
 	} zend_end_try();
+	/* 破棄が途中で中断されても、次のリクエストに参照を残さない。 */
+	memset(PG(http_globals), 0, sizeof(PG(http_globals)));
 
 	zend_deactivate(TSRMLS_C);
 
@@ -1719,6 +1722,8 @@ void php_request_shutdown_for_hook(void *dummy)
 		zend_signal_deactivate(TSRMLS_C);
 	} zend_end_try();
 #endif
+	/* 初期化前の処理が終了済みモジュールを利用しないようにする。 */
+	PG(modules_activated) = 0;
 }
 
 /* }}} */
@@ -1794,6 +1799,9 @@ void php_request_shutdown(void *dummy)
 		}
 	} zend_end_try();
 
+	/* 破棄が途中で中断されても、次のリクエストに参照を残さない。 */
+	memset(PG(http_globals), 0, sizeof(PG(http_globals)));
+
 	/* 7.5 free last error information */
 	if (PG(last_error_message)) {
 		free(PG(last_error_message));
@@ -1843,6 +1851,8 @@ void php_request_shutdown(void *dummy)
 #ifdef HAVE_DTRACE
 	DTRACE_REQUEST_SHUTDOWN(SAFE_FILENAME(SG(request_info).path_translated), SAFE_FILENAME(SG(request_info).request_uri), (char *)SAFE_FILENAME(SG(request_info).request_method));
 #endif /* HAVE_DTRACE */
+	/* 初期化前の処理が終了済みモジュールを利用しないようにする。 */
+	PG(modules_activated) = 0;
 }
 /* }}} */
 
