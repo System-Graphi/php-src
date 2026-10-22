@@ -11,4 +11,4 @@ while (true) {
 }
 ?>
 --EXPECTF--
-Fatal error: Allowed memory size of %d bytes exhausted (tried to allocate %d bytes) in %s on line %d
+Fatal error: Allowed memory size of %d bytes exhausted%r(?: at [^\r\n]+:\d+)?%r (tried to allocate %d bytes) in %s on line %d

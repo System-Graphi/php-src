@@ -13,4 +13,4 @@ $value = str_repeat("x", 32 * 1024 * 1024);
 echo "UNSAFE CONTINUATION\n";
 ?>
 --EXPECTF--
-Fatal error: Allowed memory size of %d bytes exhausted (tried to allocate %d bytes) in %s on line %d
+Fatal error: Allowed memory size of %d bytes exhausted%r(?: at [^\r\n]+:\d+)?%r (tried to allocate %d bytes) in %s on line %d
