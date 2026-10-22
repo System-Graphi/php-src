@@ -328,6 +328,19 @@ void shutdown_executor(TSRMLS_D) /* {{{ */
 		}
 	} zend_end_try();
 
+	/* 終了処理が bailout で中断されても、次の初期化前診断へ参照を持ち越さない。 */
+	EG(user_error_handler) = NULL;
+	EG(user_exception_handler) = NULL;
+	zend_stack_init(&EG(user_error_handlers_error_reporting));
+	zend_ptr_stack_init(&EG(user_error_handlers));
+	zend_ptr_stack_init(&EG(user_exception_handlers));
+	EG(error_handling) = EH_NORMAL;
+	EG(exception_class) = NULL;
+	EG(exception) = NULL;
+	EG(prev_exception) = NULL;
+	EG(objects_store).object_buckets = NULL;
+	EG(objects_store).top = 1;
+
 	zend_shutdown_fpu(TSRMLS_C);
 
 	EG(active) = 0;
